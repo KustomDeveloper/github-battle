@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { fetchPopularRepos } from './fetchPopularRepos'
+import { fetchPopularRepos } from '../utils/api'
 
 
 function LanguagesNav({ selected, onUpdateLanguage }) {
@@ -35,7 +35,7 @@ class Popular extends React.Component {
 
     this.state = {
       selectedLanguage: 'All',
-      repos: null,
+      repos: {},
       error: null
     }
 
@@ -51,25 +51,36 @@ class Popular extends React.Component {
     this.setState({
       selectedLanguage,
       error: null,
-      repos: null
+
     })
 
-    fetchPopularRepos(selectedLanguage)
-      .then((repos) => this.setState({
-        repos,
-        error: null
-      }))
-      .catch((err) => {
-        console.warn('Error fetching repos: ', err)
-
-        this.setState({
-          error: `There was an error fetching the respositories`
+    if(!this.state.repos[selectedLanguage]) {
+      fetchPopularRepos(selectedLanguage)
+        .then((data) => {
+          this.setState(( { repos } ) => ({
+            repos: {
+              ...repos,
+              [selectedLanguage]: data
+            }
+          }))
         })
-      })
+
+        .catch((err) => {
+          console.warn('Error fetching repos: ', err)
+
+          this.setState({
+            error: `There was an error fetching the respositories`
+          })
+        })
+
+    }
+
+ 
     }
     
     isLoading() {
-      return this.state.repos === null && this.state.error === null
+      const { selectedLanguage, repos, error } = this.state
+      return !repos[selectedLanguage] && this.state.error === null
     }
   render() {
     const { selectedLanguage, repos, error } = this.state
@@ -85,7 +96,7 @@ class Popular extends React.Component {
 
         {error && <p>{error}</p>}
 
-        {repos && <pre>{JSON.stringify(repos, null, 2)}</pre>}
+        {repos[selectedLanguage] && <pre>{JSON.stringify(repos, null, 2)}</pre>}
       </React.Fragment>
     )
   }
